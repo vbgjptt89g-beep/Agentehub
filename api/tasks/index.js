@@ -33,8 +33,21 @@ module.exports = async function handler(req, res) {
       res.setHeader('Cache-Control', 'no-store');
       return respondJson(res, 200, tasks);
     }
+    if (req.method === 'PATCH') {
+      if (!sameOrigin(req)) return respondJson(res, 403, { error: 'Solicitud de origen no permitido.' });
+      const id = typeof req.query.id === 'string' ? req.query.id : '';
+      if (!/^[0-9a-f-]{36}$/i.test(id)) return respondJson(res, 400, { error: 'Identificador de tarea no válido.' });
+      const [task] = await database()`
+        UPDATE agent_tasks SET status = 'cancelled', updated_at = NOW()
+        WHERE id = ${id} AND user_id = ${session.user.id} AND status = 'queued'
+        RETURNING id, repository, title, model, issue_number AS "issueNumber", status, created_at AS "createdAt", updated_at AS "updatedAt"
+      `;
+      if (!task) return respondJson(res, 409, { error: 'La tarea ya no está pendiente o no te pertenece.' });
+      res.setHeader('Cache-Control', 'no-store');
+      return respondJson(res, 200, task);
+    }
     if (req.method !== 'POST') {
-      res.setHeader('Allow', 'GET, POST');
+      res.setHeader('Allow', 'GET, POST, PATCH');
       return respondJson(res, 405, { error: 'Method not allowed.' });
     }
     if (!sameOrigin(req)) return respondJson(res, 403, { error: 'Solicitud de origen no permitido.' });

@@ -28,12 +28,26 @@ function taskRunRow(task) {
   row.className = 'run-row';
   const avatarClass = task.model.startsWith('Codex') ? 'codex' : 'claude';
   const avatarGlyph = avatarClass === 'codex' ? '⌘' : '✳';
-  row.innerHTML = `<div class="agent-avatar ${avatarClass}">${avatarGlyph}</div><div class="run-info"><div class="run-title"><b></b><span class="run-state"><i></i> En cola</span></div><div class="run-meta"><span class="repo-label"><span class="project-dot dot-cyan"></span></span><span>·</span><span></span></div><div class="run-progress"><div><i style="width:2%"></i></div><span>0%</span><small></small></div></div><button class="more-button" aria-label="Más opciones">···</button>`;
+  row.innerHTML = `<div class="agent-avatar ${avatarClass}">${avatarGlyph}</div><div class="run-info"><div class="run-title"><b></b><span class="run-state"><i></i> En cola</span></div><div class="run-meta"><span class="repo-label"><span class="project-dot dot-cyan"></span></span><span>·</span><span></span></div><div class="run-progress"><div><i style="width:2%"></i></div><span>0%</span><small></small></div></div><button class="more-button" aria-label="Cancelar tarea pendiente" title="Cancelar tarea pendiente">×</button>`;
   row.querySelector('.run-title>b').textContent = task.title;
   row.querySelector('.repo-label').append(document.createTextNode(task.repository.split('/').pop()));
   row.querySelector('.run-meta span:last-child').textContent = task.model;
   row.querySelector('.run-progress small').textContent = new Date(task.createdAt).toLocaleString();
   row.dataset.taskId = task.id;
+  row.querySelector('.more-button').addEventListener('click', async () => {
+    const button = row.querySelector('.more-button');
+    button.disabled = true;
+    try {
+      await api(`/api/tasks?id=${encodeURIComponent(task.id)}`, { method: 'PATCH' });
+      row.querySelector('.run-state').lastChild.textContent = ' Cancelada';
+      row.querySelector('.run-state i').style.background = '#999';
+      button.remove();
+      announce('Tarea pendiente cancelada.');
+    } catch (error) {
+      announce(error.message);
+      button.disabled = false;
+    }
+  });
   return row;
 }
 
