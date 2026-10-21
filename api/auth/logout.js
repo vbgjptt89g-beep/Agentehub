@@ -29,4 +29,3 @@ module.exports = async function handler(req, res) {
   res.writeHead(303, { Location: '/' });
   res.end();
 };
-

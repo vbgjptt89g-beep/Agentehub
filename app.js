@@ -23,6 +23,20 @@ function closeModal() {
   modal.setAttribute('aria-hidden', 'true');
 }
 
+function taskRunRow(task) {
+  const row = document.createElement('article');
+  row.className = 'run-row';
+  const avatarClass = task.model.startsWith('Codex') ? 'codex' : 'claude';
+  const avatarGlyph = avatarClass === 'codex' ? '⌘' : '✳';
+  row.innerHTML = `<div class="agent-avatar ${avatarClass}">${avatarGlyph}</div><div class="run-info"><div class="run-title"><b></b><span class="run-state"><i></i> En cola</span></div><div class="run-meta"><span class="repo-label"><span class="project-dot dot-cyan"></span></span><span>·</span><span></span></div><div class="run-progress"><div><i style="width:2%"></i></div><span>0%</span><small></small></div></div><button class="more-button" aria-label="Más opciones">···</button>`;
+  row.querySelector('.run-title>b').textContent = task.title;
+  row.querySelector('.repo-label').append(document.createTextNode(task.repository.split('/').pop()));
+  row.querySelector('.run-meta span:last-child').textContent = task.model;
+  row.querySelector('.run-progress small').textContent = new Date(task.createdAt).toLocaleString();
+  row.dataset.taskId = task.id;
+  return row;
+}
+
 document.querySelector('#new-task').addEventListener('click', openModal);
 document.querySelector('.close-modal').addEventListener('click', closeModal);
 modal.addEventListener('click', event => { if (event.target === modal) closeModal(); });
@@ -35,7 +49,7 @@ document.addEventListener('keydown', event => {
   if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') openModal();
 });
 
-document.querySelector('#launch-task').addEventListener('click', () => {
+document.querySelector('#launch-task').addEventListener('click', async () => {
   const title = promptField.value.trim();
   if (!title) {
     promptField.focus();
@@ -48,20 +62,27 @@ document.querySelector('#launch-task').addEventListener('click', () => {
     announce('Conecta una cuenta de GitHub con al menos un repositorio público antes de continuar.');
     return;
   }
-  const repo = document.querySelector('#repo-select').value.split('/').pop();
+  const repository = document.querySelector('#repo-select').value;
+  const repo = repository.split('/').pop();
   const model = document.querySelector('#model-select').value;
-  const row = document.createElement('article');
-  row.className = 'run-row';
-  const avatarClass = model.startsWith('Codex') ? 'codex' : 'claude';
-  const avatarGlyph = avatarClass === 'codex' ? '⌘' : '✳';
-  row.innerHTML = `<div class="agent-avatar ${avatarClass}">${avatarGlyph}</div><div class="run-info"><div class="run-title"><b></b><span class="run-state"><i></i> Demo local</span></div><div class="run-meta"><span class="repo-label"><span class="project-dot dot-cyan"></span>${repo}</span><span>·</span><span>${model}</span></div><div class="run-progress"><div><i style="width:2%"></i></div><span>0%</span><small>ahora</small></div></div><button class="more-button" aria-label="Más opciones">···</button>`;
-  row.querySelector('.run-title>b').textContent = title;
+  const launchButton = document.querySelector('#launch-task');
+  launchButton.disabled = true;
+  try {
+  const issue = document.querySelector('#issue-input').value.trim();
+  const task = await api('/api/tasks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, prompt: title, repository, model, issue }) });
+  const row = taskRunRow(task);
   document.querySelector('.running-list').prepend(row);
   const count = document.querySelector('.section-heading h2 .count-pill');
   count.textContent = String(Number(count.textContent) + 1);
   closeModal();
   promptField.value = '';
-  announce('Tarea añadida a la cola de demostración; la ejecución real llegará con los workers.');
+  document.querySelector('#issue-input').value = '';
+  announce('Tarea guardada. Quedó en cola; falta activar el worker de ejecución.');
+  } catch (error) {
+    announce(error.message);
+  } finally {
+    launchButton.disabled = false;
+  }
 });
 
 document.querySelectorAll('.nav-item[data-view], .text-button[data-view]').forEach(button => {
@@ -169,11 +190,14 @@ async function refreshDashboard() {
   const pullsPromise = githubState.selectedRepo
     ? api(`/api/github/pulls?repo=${encodeURIComponent(githubState.selectedRepo)}`).catch(() => [])
     : Promise.resolve([]);
-  const [issues, pulls] = await Promise.all([issuesPromise, pullsPromise]);
+  const tasksPromise = githubState.selectedRepo
+    ? api(`/api/tasks?repo=${encodeURIComponent(githubState.selectedRepo)}`).catch(() => [])
+    : Promise.resolve([]);
+  const [issues, pulls, tasks] = await Promise.all([issuesPromise, pullsPromise, tasksPromise]);
   document.querySelector('#dashboard-status').textContent = `GitHub conectado · datos actuales de ${githubState.selectedRepo || 'tus repositorios'}. Las ejecuciones de agentes aún son una vista previa.`;
   document.querySelector('#dashboard-status').classList.add('connected-banner');
   const metrics = document.querySelectorAll('.metric-value');
-  if (metrics[0]) metrics[0].textContent = '0';
+  if (metrics[0]) metrics[0].textContent = String(tasks.filter(task => ['queued', 'running'].includes(task.status)).length);
   if (metrics[1]) metrics[1].textContent = String(pulls.length);
   if (metrics[2]) metrics[2].textContent = '—';
   if (metrics[3]) metrics[3].textContent = '$0.00';
@@ -187,13 +211,16 @@ async function refreshDashboard() {
     if (metricFoots[index]) metricFoots[index].textContent = label;
   });
   const count = document.querySelector('.section-heading h2 .count-pill');
-  if (count) count.textContent = '0';
+  if (count) count.textContent = String(tasks.length);
   const runList = document.querySelector('#running-list');
   runList.replaceChildren();
-  const noRuns = document.createElement('p');
-  noRuns.className = 'empty-state';
-  noRuns.textContent = 'Aún no hay ejecuciones de agentes conectadas.';
-  runList.append(noRuns);
+  if (tasks.length) tasks.slice(0, 8).forEach(task => runList.append(taskRunRow(task)));
+  else {
+    const noRuns = document.createElement('p');
+    noRuns.className = 'empty-state';
+    noRuns.textContent = 'Aún no hay tareas guardadas para este repositorio.';
+    runList.append(noRuns);
+  }
   const tableBody = document.querySelector('.activity-table tbody');
   tableBody.replaceChildren();
   issues.slice(0, 5).forEach(issue => {
@@ -269,8 +296,8 @@ async function showView(view) {
     let rows = [];
     if (view === 'repositories') rows = githubState.repos.map(repo => ({ title: repo.fullName, meta: `${repo.private ? 'Privado' : 'Público'} · rama ${repo.defaultBranch} · ${repo.openIssuesCount || 0} issues abiertos`, href: repo.htmlUrl }));
     if (view === 'tasks') {
-      const issues = await loadIssues(githubState.selectedRepo);
-      rows = issues.map(issue => ({ title: `#${issue.number} · ${issue.title}`, meta: `Actualizado ${new Date(issue.updatedAt).toLocaleDateString()} · ${issue.labels.join(', ') || 'sin etiquetas'}`, href: issue.htmlUrl, issue }));
+      const tasks = await api(`/api/tasks?repo=${encodeURIComponent(githubState.selectedRepo)}`);
+      rows = tasks.map(task => ({ title: task.issueNumber ? `#${task.issueNumber} · ${task.title}` : task.title, meta: `${task.status === 'queued' ? 'En cola' : task.status} · ${task.repository} · ${task.model} · ${new Date(task.createdAt).toLocaleString()}` }));
     }
     if (view === 'pull-requests') {
       if (!githubState.selectedRepo) throw new Error('Selecciona primero un repositorio.');
@@ -281,7 +308,7 @@ async function showView(view) {
       rows = [
         { title: 'GitHub OAuth', meta: `Conectado como @${githubState.user.login} · permisos: ${githubState.scopes.join(', ') || 'repositorios públicos'}` },
         { title: 'Anthropic y OpenAI', meta: 'Los proveedores todavía no están conectados. Las API keys se añadirán como ANTHROPIC_API_KEY y OPENAI_API_KEY en Vercel.' },
-        { title: 'Ejecución de tareas', meta: 'Las tareas creadas son locales a esta sesión; no se guardan en una base de datos ni inician un agente.' },
+        { title: 'Ejecución de tareas', meta: 'Las tareas se guardan por usuario en PostgreSQL y quedan en cola hasta activar un worker.' },
         { title: 'Sandbox', meta: 'La ejecución aislada aún no está habilitada. No se ejecuta código del repositorio desde la web.' },
         { title: 'Costos y equipos', meta: 'PostgreSQL, límites de gasto y roles de equipo quedan para la siguiente etapa.' }
       ];
@@ -293,7 +320,7 @@ async function showView(view) {
     if (!rows.length) {
       const empty = document.createElement('p');
       empty.className = 'empty-state';
-      empty.textContent = view === 'tasks' ? 'No hay issues abiertos en este repositorio.' : view === 'pull-requests' ? 'No hay pull requests abiertos.' : 'No encontramos elementos para mostrar.';
+      empty.textContent = view === 'tasks' ? 'No hay tareas guardadas para este repositorio.' : view === 'pull-requests' ? 'No hay pull requests abiertos.' : 'No encontramos elementos para mostrar.';
       panel.append(empty);
       return;
     }
@@ -347,4 +374,3 @@ const authResult = new URLSearchParams(window.location.search).get('auth');
 if (authResult === 'connected') announce('GitHub conectado. Tus repositorios ya están disponibles.');
 if (authResult === 'github-error') announce('No se pudo completar la conexión con GitHub.');
 if (authResult) window.history.replaceState({}, '', window.location.pathname);
-

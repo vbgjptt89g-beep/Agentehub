@@ -25,4 +25,3 @@ module.exports = function handler(req, res) {
   res.writeHead(302, { Location: url.toString() });
   res.end();
 };
-

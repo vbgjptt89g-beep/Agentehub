@@ -22,4 +22,3 @@ a.data-row:hover{background:#191a1d;text-decoration:none}
 .running-list>.empty-state{padding:14px 0;border-bottom:1px solid var(--line-soft)}
 .timeline>.empty-state{padding:9px 0}
 @media(max-width:620px){.github-auth-link,.github-logout{padding:0 6px;font-size:9px}.data-heading h1{font-size:21px}.demo-banner{font-size:9px;line-height:1.5}}
-

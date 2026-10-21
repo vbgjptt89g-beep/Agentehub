@@ -13,4 +13,3 @@ module.exports = function handler(req, res) {
     scopes: session.scope.split(',').filter(Boolean)
   });
 };
-

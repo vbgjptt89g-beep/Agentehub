@@ -38,7 +38,7 @@ module.exports = async function handler(req, res) {
       accessToken: tokenData.access_token,
       scope: tokenData.scope || '',
       expiresAt: Date.now() + SESSION_TTL * 1000,
-      user: { login: profile.login, avatarUrl: profile.avatar_url, name: profile.name || profile.login }
+      user: { id: profile.id, login: profile.login, avatarUrl: profile.avatar_url, name: profile.name || profile.login }
     };
     setCookie(res, COOKIE_NAME, sealSession(session), SESSION_TTL);
     clearCookie(res, STATE_COOKIE_NAME);
@@ -49,4 +49,3 @@ module.exports = async function handler(req, res) {
     fail('github-error');
   }
 };
-

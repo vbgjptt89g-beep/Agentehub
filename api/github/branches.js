@@ -13,4 +13,3 @@ module.exports = async function handler(req, res) {
     respondJson(res, error.status || 502, { error: error.message });
   }
 };
-
