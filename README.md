@@ -105,19 +105,33 @@ La creación de tareas acepta JSON con `title`, `prompt`, `repository`, `model` 
 ## Estructura
 
 ```text
+.github/
+  workflows/ci.yml       Validación de sintaxis y configuración
+  pull_request_template.md
+assets/                   Recursos gráficos
 api/
   auth/       OAuth y sesión
   github/     Lectura de datos de GitHub
   tasks/      Cola persistente y cancelación
+backend/                  Notas de organización del backend Vercel
+docs/                     Arquitectura, seguridad y hoja de ruta
+frontend/                 Notas de organización de la interfaz
 lib/
   database.js       Conexión Neon y esquema de tareas
   github-session.js Sesiones cifradas y cliente de GitHub
+scripts/check-project.js  Validación estática local y de CI
+shared/                   Constantes compartidas
+tests/                    Guía para la futura suite automatizada
 index.html          Aplicación web
 styles.css          Estilos base
 ui-states.css       Estados de interfaz
 notion.css          Tema claro inspirado en la referencia Notion
 app.js              Navegación e integración del dashboard
+CLAUDE.md            Contexto y límites para agentes de código
+vercel.json          Cabeceras y política de seguridad
 ```
+
+Las carpetas `frontend/` y `backend/` documentan las áreas del producto. Los archivos desplegables se mantienen en la raíz y en `api/`, como requiere la configuración serverless actual de Vercel.
 
 ## Próximas etapas
 
@@ -126,3 +140,4 @@ app.js              Navegación e integración del dashboard
 3. Ejecutar comandos y tests dentro de Vercel Sandbox con políticas de red restrictivas.
 4. Crear ramas, commits y PRs con permisos mínimos y aprobaciones humanas.
 5. Añadir streaming de logs, revisión cruzada, webhooks y soporte para equipos.
+
