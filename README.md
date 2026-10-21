@@ -1,54 +1,128 @@
 # AgentHub
 
-Centro de mando web para conectar GitHub y preparar trabajo de agentes de código.
+AgentHub reúne repositorios, issues, pull requests y tareas de agentes de código en un solo centro de trabajo. Esta versión combina un dashboard web responsive, GitHub OAuth y una cola de tareas persistida en PostgreSQL.
 
-## Estado de esta primera entrega
+> Las tareas se guardan y se pueden cancelar mientras siguen pendientes. El worker que las ejecutará, los proveedores de modelos y el sandbox todavía están en desarrollo; crear una tarea no ejecuta código ni abre un pull request.
 
-- Dashboard responsive con vistas de repositorios, issues y pull requests.
-- OAuth de GitHub con `state` anti-CSRF y sesión cifrada en cookie `HttpOnly`, `Secure` en producción y `SameSite=Lax`.
-- Endpoints serverless de solo lectura para repositorios, ramas, issues y PRs.
-- Las tareas se guardan en PostgreSQL por usuario y repositorio con estado `queued`. Todavía no hay worker que las ejecute, proveedores de IA conectados ni sandbox.
-- La conexión solicita el scope `public_repo`; esta entrega puede leer y escribir en repositorios públicos autorizados por el usuario. No solicita acceso a repositorios privados.
+## Funciones disponibles
 
-## Preparar GitHub OAuth
+- Iniciar y cerrar sesión con GitHub OAuth.
+- Consultar repositorios públicos, ramas, issues abiertos y pull requests del usuario.
+- Guardar tareas por usuario y repositorio en PostgreSQL, con el modelo y el issue asociado.
+- Consultar y cancelar tareas que sigan en estado `queued`.
+- Dashboard adaptable a móvil con estados vacíos, resumen de GitHub y vistas de repositorios, tareas y PRs.
+- Sesiones cifradas en cookie `HttpOnly`, `SameSite=Lax`, `Secure` en producción y protección `state` durante OAuth.
 
-1. Crea una GitHub OAuth App en GitHub Developer Settings.
-2. Configura su **Authorization callback URL** como `https://TU-DOMINIO/api/auth/callback` (para desarrollo: `http://localhost:3000/api/auth/callback`).
-3. Copia el Client ID y genera un Client Secret.
-4. Añade estas variables al entorno del despliegue:
+## Estado del proyecto
+
+| Área | Estado |
+| --- | --- |
+| Interfaz y navegación | Disponible |
+| Lectura de GitHub | Disponible para repositorios públicos |
+| Persistencia de tareas | Disponible con PostgreSQL y `DATABASE_URL` |
+| Cancelación de tareas pendientes | Disponible |
+| Ejecución de agentes y cola de workers | Pendiente |
+| Anthropic, OpenAI y modelos locales | Pendiente |
+| Sandbox de código, tests y streaming de logs | Pendiente |
+| Creación de ramas, commits y pull requests por agentes | Pendiente |
+| Equipos, costos y gestión de claves | Pendiente |
+
+## Requisitos
+
+- Node.js 20 o posterior.
+- Una GitHub OAuth App.
+- PostgreSQL compatible con Neon para habilitar la cola persistente.
+- Una cuenta de Vercel para desplegar con funciones serverless.
+
+## Configuración local
+
+1. Clona el repositorio y crea `.env` a partir de `.env.example`.
+2. Crea una GitHub OAuth App. Para desarrollo, configura el callback `http://localhost:3000/api/auth/callback`.
+3. Completa las variables de entorno:
 
 ```text
-GITHUB_CLIENT_ID=...
-GITHUB_CLIENT_SECRET=...
-GITHUB_OAUTH_CALLBACK_URL=https://TU-DOMINIO/api/auth/callback
-AGENTHUB_SESSION_SECRET=<secreto aleatorio de 32 o más caracteres>
-DATABASE_URL=<connection string de PostgreSQL compatible con Neon>
+GITHUB_CLIENT_ID=
+GITHUB_CLIENT_SECRET=
+GITHUB_OAUTH_CALLBACK_URL=http://localhost:3000/api/auth/callback
+AGENTHUB_SESSION_SECRET=
+DATABASE_URL=
 ```
 
-Puedes generar `AGENTHUB_SESSION_SECRET` con `node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"`. `DATABASE_URL` se obtiene al conectar una base Neon/Postgres desde Vercel Marketplace o desde Neon. La primera llamada a tareas crea la tabla e índice necesarios. Nunca publiques `.env` ni el Client Secret. El archivo `.env.example` no contiene credenciales.
+Genera el secreto de sesión con:
 
-## Vercel
+```sh
+node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"
+```
 
-El repo está preparado como sitio estático con funciones Node en `api/`. Importa el repo en Vercel, deja el framework como **Other** y la raíz del proyecto en `/`. Añade las cinco variables de entorno anteriores para Preview y Production; configura el callback de GitHub para el dominio donde probarás OAuth. Vercel publicará el HTML, CSS y JS estáticos y servirá las funciones API. Conecta Neon desde Marketplace y asegúrate de que `DATABASE_URL` esté disponible en el entorno.
+Instala las dependencias y arranca las funciones locales de Vercel:
 
-## Rutas API
+```sh
+npm install
+npx vercel dev
+```
 
-- `GET /api/auth/login` — inicia OAuth.
-- `GET /api/auth/callback` — valida `state`, intercambia el código y cifra la sesión.
-- `GET /api/auth/me` — usuario conectado y scopes autorizados.
-- `POST /api/auth/logout` — cierra la sesión local.
-- `GET /api/github/repos` — repos públicos accesibles por la cuenta.
-- `GET /api/github/branches?repo=owner/name`
-- `GET /api/github/issues?repo=owner/name`
-- `GET /api/github/pulls?repo=owner/name`
-- `GET /api/tasks?repo=owner/name` — tareas persistentes del usuario autenticado.
-- `POST /api/tasks` — valida acceso al repositorio y registra una tarea en estado `queued`.
-- `PATCH /api/tasks?id=<uuid>` — cancela una tarea que siga pendiente.
+Si no configuras `DATABASE_URL`, las vistas de GitHub siguen disponibles, pero las rutas de tareas responden con `503` y el dashboard indicará que falta la base de datos.
+
+## Despliegue en Vercel
+
+1. Importa el repositorio en Vercel con el framework **Other** y raíz `/`.
+2. Añade Neon Postgres desde Vercel Marketplace o conecta una base Neon existente; verifica que el proyecto tenga `DATABASE_URL`.
+3. Configura `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `GITHUB_OAUTH_CALLBACK_URL`, `AGENTHUB_SESSION_SECRET` y `DATABASE_URL` para Preview y Production.
+4. En la GitHub OAuth App, configura el callback exacto del dominio de Vercel: `https://TU-DOMINIO/api/auth/callback`.
+5. Despliega y conecta GitHub desde el dashboard.
+
+La tabla e índice de tareas se crean de forma idempotente en la primera petición autenticada a `/api/tasks`.
+
+## API
+
+Todas las rutas de GitHub y tareas requieren una sesión activa.
+
+| Método | Ruta | Descripción |
+| --- | --- | --- |
+| `GET` | `/api/auth/login` | Inicia el flujo OAuth de GitHub. |
+| `GET` | `/api/auth/callback` | Valida `state`, intercambia el código y crea la sesión. |
+| `GET` | `/api/auth/me` | Devuelve el usuario y los scopes concedidos. |
+| `POST` | `/api/auth/logout` | Revoca el grant de OAuth e invalida la cookie local. |
+| `GET` | `/api/github/repos` | Lista repositorios públicos accesibles por el usuario. |
+| `GET` | `/api/github/branches?repo=owner/name` | Lista ramas del repositorio. |
+| `GET` | `/api/github/issues?repo=owner/name` | Lista issues abiertos, sin incluir PRs. |
+| `GET` | `/api/github/pulls?repo=owner/name` | Lista pull requests abiertos. |
+| `GET` | `/api/tasks?repo=owner/name` | Lista las tareas del usuario; el filtro `repo` es opcional. |
+| `POST` | `/api/tasks` | Valida el repositorio e inserta una tarea en `queued`. |
+| `PATCH` | `/api/tasks?id=<uuid>` | Cancela una tarea del usuario que aún esté `queued`. |
+
+La creación de tareas acepta JSON con `title`, `prompt`, `repository`, `model` y el `issue` opcional. Solo acepta repositorios públicos en esta entrega. Las peticiones de escritura se limitan al mismo origen.
+
+## Seguridad y límites actuales
+
+- OAuth solicita `read:user,public_repo`; no concede lectura de repositorios privados.
+- No se envían claves de proveedores al navegador ni se ejecutan comandos del repositorio.
+- `DATABASE_URL` es una variable exclusivamente de servidor y no debe usar prefijo `NEXT_PUBLIC_`.
+- Los modelos que aparecen en el selector solo se guardan como preferencia; no hay llamadas a Anthropic u OpenAI hasta implementar los proveedores.
+- La cola no arranca tareas automáticamente. El estado `queued` significa pendiente de worker, no que un agente ya esté trabajando.
+- No hay métricas de costo ni resultados de tests simulados en el dashboard.
+
+## Estructura
+
+```text
+api/
+  auth/       OAuth y sesión
+  github/     Lectura de datos de GitHub
+  tasks/      Cola persistente y cancelación
+lib/
+  database.js       Conexión Neon y esquema de tareas
+  github-session.js Sesiones cifradas y cliente de GitHub
+index.html          Aplicación web
+styles.css          Estilos base
+ui-states.css       Estados de interfaz
+notion.css          Tema claro inspirado en la referencia Notion
+app.js              Navegación e integración del dashboard
+```
 
 ## Próximas etapas
 
-1. Persistir usuarios, conexiones y ejecuciones completas en PostgreSQL (la cola de tareas ya tiene persistencia inicial).
-2. Sustituir OAuth App por GitHub App con permisos mínimos y webhooks firmados.
-3. Conectar proveedores Anthropic/OpenAI con claves cifradas del servidor.
-4. Añadir workers y una cola durable; ejecutar herramientas dentro de sandboxes efímeros con límites de CPU, memoria y red.
-5. Streaming, cancelación, ramas/commits/PRs, revisión cruzada y registro de costos.
+1. Añadir un worker durable que consuma tareas y registre eventos y resultados.
+2. Conectar proveedores de IA con claves del servidor y límites de gasto.
+3. Ejecutar comandos y tests dentro de Vercel Sandbox con políticas de red restrictivas.
+4. Crear ramas, commits y PRs con permisos mínimos y aprobaciones humanas.
+5. Añadir streaming de logs, revisión cruzada, webhooks y soporte para equipos.

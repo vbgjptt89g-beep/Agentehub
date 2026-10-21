@@ -218,7 +218,7 @@ async function refreshDashboard() {
   if (metrics[2]) metrics[2].textContent = '—';
   if (metrics[3]) metrics[3].textContent = '$0.00';
   const metricLabels = document.querySelectorAll('.metric-label');
-  if (metricLabels[0]) metricLabels[0].childNodes[0].textContent = 'Agentes activos ';
+  if (metricLabels[0]) metricLabels[0].childNodes[0].textContent = 'Tareas pendientes ';
   if (metricLabels[1]) metricLabels[1].childNodes[0].textContent = 'PRs abiertos ';
   if (metricLabels[2]) metricLabels[2].childNodes[0].textContent = 'Tests de agentes ';
   if (metricLabels[3]) metricLabels[3].childNodes[0].textContent = 'Costo registrado ';
@@ -228,6 +228,10 @@ async function refreshDashboard() {
   });
   const count = document.querySelector('.section-heading h2 .count-pill');
   if (count) count.textContent = String(tasks.length);
+  const taskNavCount = document.querySelector('.nav-item[data-view="tasks"] .nav-count');
+  if (taskNavCount) taskNavCount.textContent = String(tasks.length);
+  const pullNavCount = document.querySelector('.nav-item[data-view="pull-requests"] .nav-count');
+  if (pullNavCount) pullNavCount.textContent = String(pulls.length);
   const runList = document.querySelector('#running-list');
   runList.replaceChildren();
   if (tasks.length) tasks.slice(0, 8).forEach(task => runList.append(taskRunRow(task)));

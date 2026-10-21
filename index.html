@@ -3,14 +3,15 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#111214" />
+  <meta name="theme-color" content="#f6f5f4" />
   <meta name="description" content="AgentHub — coordina agentes de código desde un solo lugar." />
   <title>AgentHub · Centro de mando</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/styles.css" />
   <link rel="stylesheet" href="/ui-states.css" />
+  <link rel="stylesheet" href="/notion.css" />
 </head>
 <body>
   <div class="app-shell">
@@ -24,16 +25,12 @@
       <div class="nav-label">ESPACIO DE TRABAJO</div>
       <nav class="main-nav">
         <button class="nav-item active" data-view="overview"><svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg>Visión general <span class="nav-shortcut">⌘ 1</span></button>
-        <button class="nav-item" data-view="tasks"><svg viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg>Tareas <span class="nav-count">4</span></button>
-        <button class="nav-item" data-view="pull-requests"><svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="2.3"/><circle cx="6" cy="18" r="2.3"/><circle cx="18" cy="6" r="2.3"/><path d="M6 8.5v7M18 8.5c0 5-4 5-8 5"/></svg>Pull requests <span class="nav-count muted">2</span></button>
+        <button class="nav-item" data-view="tasks"><svg viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg>Tareas <span class="nav-count">0</span></button>
+        <button class="nav-item" data-view="pull-requests"><svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="2.3"/><circle cx="6" cy="18" r="2.3"/><circle cx="18" cy="6" r="2.3"/><path d="M6 8.5v7M18 8.5c0 5-4 5-8 5"/></svg>Pull requests <span class="nav-count muted">0</span></button>
         <button class="nav-item" data-view="repositories"><svg viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 1 4 16.5zM4 16.5A2.5 2.5 0 0 1 6.5 14H20M8 7h7"/></svg>Repositorios</button>
       </nav>
       <div class="nav-label projects-label">PROYECTOS <button class="tiny-plus" aria-label="Añadir proyecto">+</button></div>
-      <nav class="project-nav">
-        <button class="project-link selected" data-repo="northstar/web-app"><span class="project-dot dot-cyan"></span>web-app <small>3</small></button>
-        <button class="project-link" data-repo="northstar/api"><span class="project-dot dot-orange"></span>api <small>1</small></button>
-        <button class="project-link" data-repo="northstar/design-system"><span class="project-dot dot-lilac"></span>design-system</button>
-      </nav>
+      <nav class="project-nav"><p class="sidebar-empty">Tus repositorios aparecerán al conectar GitHub.</p></nav>
       <div class="sidebar-bottom">
         <div class="usage-block"><div class="usage-title"><span>Uso este mes</span><span>$18.42 <em>/ $50</em></span></div><div class="usage-track"><i></i></div><small>37% del límite mensual</small></div>
         <button class="nav-item settings-link" data-view="settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="m19.4 15 .1.1a1.7 1.7 0 1 1-2.4 2.4l-.1-.1a1.7 1.7 0 0 0-2.9 1.2v.2a1.7 1.7 0 1 1-3.4 0v-.2a1.7 1.7 0 0 0-2.9-1.2l-.1.1a1.7 1.7 0 1 1-2.4-2.4l.1-.1A1.7 1.7 0 0 0 4.2 12H4a1.7 1.7 0 1 1 0-3.4h.2a1.7 1.7 0 0 0 1.2-2.9l-.1-.1a1.7 1.7 0 1 1 2.4-2.4l.1.1a1.7 1.7 0 0 0 2.9-1.2V2a1.7 1.7 0 1 1 3.4 0v.2a1.7 1.7 0 0 0 2.9 1.2l.1-.1a1.7 1.7 0 1 1 2.4 2.4l-.1.1a1.7 1.7 0 0 0 1.2 2.9h.2a1.7 1.7 0 1 1 0 3.4h-.2a1.7 1.7 0 0 0-1.2 2.9Z"/></svg>Configuración</button>
@@ -48,28 +45,20 @@
         <section class="page-heading"><div><div class="eyebrow"><span class="live-dot"></span> TU WORKSPACE</div><h1>Centro de mando</h1><p>Repositorios, issues y pull requests de GitHub en un solo lugar.</p></div><button class="primary-button" id="new-task"><span>+</span> Nueva tarea <kbd>⌘ ↵</kbd></button></section>
         <div class="demo-banner" id="dashboard-status">Vista de demostración · conecta GitHub para ver tus repositorios reales.</div>
         <section class="metric-grid" aria-label="Resumen de actividad">
-          <article class="metric"><div class="metric-label">Agentes activos <span class="metric-icon green">◉</span></div><div class="metric-value">03 <span class="metric-delta positive">+1 <small>esta semana</small></span></div><div class="metric-foot"><span class="mini-bars"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span><span>pico de 5 hoy</span></div></article>
-          <article class="metric"><div class="metric-label">PRs listos <span class="metric-icon lilac">↗</span></div><div class="metric-value">02 <span class="metric-delta">esperando revisión</span></div><div class="metric-foot"><span class="tiny-pr">✓ checks pasando</span><span>·</span><span>ambos</span></div></article>
-          <article class="metric"><div class="metric-label">Tests pasando <span class="metric-icon green">✓</span></div><div class="metric-value">98.4<span class="value-unit">%</span><span class="metric-delta positive">+2.1%</span></div><div class="metric-foot"><span class="tiny-pr">1,284 tests</span><span>·</span><span>últimos 7 días</span></div></article>
-          <article class="metric cost-metric"><div class="metric-label">Costo del mes <span class="metric-icon gold">$</span></div><div class="metric-value">$18.42 <span class="metric-delta">de $50.00</span></div><div class="metric-foot"><div class="cost-track"><i></i></div><span>37%</span></div></article>
+          <article class="metric"><div class="metric-label">Tareas pendientes <span class="metric-icon green">◉</span></div><div class="metric-value">—</div><div class="metric-foot"><span>Cola persistente</span></div></article>
+          <article class="metric"><div class="metric-label">Pull requests abiertos <span class="metric-icon lilac">↗</span></div><div class="metric-value">—</div><div class="metric-foot"><span>En el repositorio elegido</span></div></article>
+          <article class="metric"><div class="metric-label">Pruebas de agentes <span class="metric-icon green">✓</span></div><div class="metric-value">—</div><div class="metric-foot"><span>Worker aún pendiente</span></div></article>
+          <article class="metric cost-metric"><div class="metric-label">Costo registrado <span class="metric-icon gold">$</span></div><div class="metric-value">$0.00</div><div class="metric-foot"><span>Sin ejecuciones de agentes</span></div></article>
         </section>
         <section class="workbench">
           <div class="workbench-main">
             <div class="section-heading"><div><h2>En ejecución <span class="count-pill">3</span></h2><p>Agentes trabajando ahora mismo</p></div><button class="text-button" data-view="tasks">Ver todas <span>→</span></button></div>
-            <div class="running-list" id="running-list">
-              <article class="run-row"><div class="agent-avatar claude">✳</div><div class="run-info"><div class="run-title"><b>Refactorizar autenticación OAuth</b><span class="run-state"><i></i> Ejecutando</span></div><div class="run-meta"><span class="repo-label"><span class="project-dot dot-cyan"></span>web-app</span><span>·</span><span>Issue <a href="#">#284</a></span><span>·</span><span>Claude Sonnet 4</span></div><div class="run-progress"><div><i style="width:68%"></i></div><span>68%</span><small>2m 14s</small></div></div><button class="more-button" aria-label="Más opciones">···</button></article>
-              <article class="run-row"><div class="agent-avatar codex">⌘</div><div class="run-info"><div class="run-title"><b>Añadir paginación al endpoint de usuarios</b><span class="run-state"><i></i> Ejecutando</span></div><div class="run-meta"><span class="repo-label"><span class="project-dot dot-orange"></span>api</span><span>·</span><span>Issue <a href="#">#91</a></span><span>·</span><span>Codex</span></div><div class="run-progress"><div><i style="width:42%"></i></div><span>42%</span><small>1m 08s</small></div></div><button class="more-button" aria-label="Más opciones">···</button></article>
-              <article class="run-row"><div class="agent-avatar claude">✳</div><div class="run-info"><div class="run-title"><b>Corregir desbordamiento en móvil</b><span class="run-state"><i></i> Ejecutando</span></div><div class="run-meta"><span class="repo-label"><span class="project-dot dot-cyan"></span>web-app</span><span>·</span><span>Manual</span><span>·</span><span>Claude Sonnet 4</span></div><div class="run-progress"><div><i style="width:87%"></i></div><span>87%</span><small>4m 32s</small></div></div><button class="more-button" aria-label="Más opciones">···</button></article>
-            </div>
+            <div class="running-list" id="running-list"><p class="empty-state">Conecta GitHub para consultar tus tareas.</p></div>
             <div class="section-heading recent-heading"><div><h2>Actividad reciente</h2><p>Lo último que pasó en tus proyectos</p></div><button class="filter-button">Últimos 7 días <svg viewBox="0 0 24 24"><path d="m7 10 5 5 5-5"/></svg></button></div>
-            <div class="activity-table-wrap"><table class="activity-table"><thead><tr><th>TAREA</th><th>AGENTE</th><th>ESTADO</th><th>TIEMPO</th></tr></thead><tbody>
-              <tr><td><span class="table-task-icon done">✓</span><span class="table-task"><b>Actualizar dependencias de seguridad</b><small>web-app <span>·</span> PR <a href="#">#128</a></small></span></td><td><span class="mini-agent claude">✳</span> Claude</td><td><span class="status-chip merged"><i></i> Completado</span></td><td>12 min</td></tr>
-              <tr><td><span class="table-task-icon review">↗</span><span class="table-task"><b>Agregar endpoint de health check</b><small>api <span>·</span> PR <a href="#">#127</a></small></span></td><td><span class="mini-agent codex">⌘</span> Codex</td><td><span class="status-chip review"><i></i> En revisión</span></td><td>8 min</td></tr>
-              <tr><td><span class="table-task-icon done">✓</span><span class="table-task"><b>Mejorar contraste del botón primario</b><small>design-system <span>·</span> PR <a href="#">#42</a></small></span></td><td><span class="mini-agent claude">✳</span> Claude</td><td><span class="status-chip merged"><i></i> Completado</span></td><td>6 min</td></tr>
-            </tbody></table></div>
+            <div class="activity-table-wrap"><table class="activity-table"><thead><tr><th>TAREA</th><th>ORIGEN</th><th>ESTADO</th><th>ACTUALIZADO</th></tr></thead><tbody><tr><td colspan="4" class="table-empty">La actividad de GitHub aparecerá cuando conectes una cuenta.</td></tr></tbody></table></div>
           </div>
           <aside class="workbench-rail">
-            <section class="rail-section"><div class="rail-title"><h3>Actividad en vivo</h3><span class="stream-live"><i></i> LIVE</span></div><div class="timeline"><div class="timeline-item"><span class="timeline-marker teal"></span><div><b>Claude</b> abrió <a href="#">PR #128</a><p>Actualizó 3 dependencias</p><small>hace 2 min</small></div></div><div class="timeline-item"><span class="timeline-marker blue"></span><div><b>Codex</b> pasó los tests<p><span class="terminal-inline">1,284 passed</span> en api</p><small>hace 5 min</small></div></div><div class="timeline-item"><span class="timeline-marker orange"></span><div><b>Claude</b> inició tarea<p>Issue <a href="#">#284</a> · web-app</p><small>hace 12 min</small></div></div><div class="timeline-item"><span class="timeline-marker lilac"></span><div><b>Codex</b> creó una rama<p><span class="branch-inline">agent/health-check</span></p><small>hace 24 min</small></div></div></div><button class="rail-link">Ver registro completo <span>→</span></button></section>
+            <section class="rail-section"><div class="rail-title"><h3>Actividad en vivo</h3><span class="stream-live"><i></i> CONECTA</span></div><div class="timeline"><p class="empty-state">Los eventos se mostrarán cuando se active un worker.</p></div></section>
             <section class="rail-section models-section"><div class="rail-title"><h3>Proveedores de IA</h3><button class="icon-button small-plus" aria-label="Configurar proveedor">+</button></div><div class="model-row"><span class="model-symbol anthropic">✳</span><div><b>Anthropic</b><small>Clave pendiente</small></div><i class="not-connected-dot"></i></div><div class="model-row"><span class="model-symbol openai">⌘</span><div><b>OpenAI</b><small>Clave pendiente</small></div><i class="not-connected-dot"></i></div><button class="connect-model">+ Configurar proveedor</button></section>
             <section class="sandbox-note"><div class="sandbox-icon"><svg viewBox="0 0 24 24"><path d="M12 3 4 7.5v9L12 21l8-4.5v-9L12 3Z"/><path d="m4.5 7.8 7.5 4.3 7.5-4.3M12 12v8.5"/></svg></div><div><b>Sandbox pendiente</b><p>La web todavía no ejecuta código del repo.</p><button class="connect-model" data-settings-link>Ver estado →</button></div></section>
           </aside>
