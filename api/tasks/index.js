@@ -1,7 +1,6 @@
 const { database, ensureTaskSchema } = require('../../lib/database');
 const { githubFetch, requireSession, respondJson } = require('../../lib/github-session');
-
-const MODELS = new Set(['Claude Sonnet 4', 'Codex · GPT-5', 'Comparar ambos']);
+const { SUPPORTED_MODELS } = require('../../shared/constants');
 
 function sameOrigin(req) {
   const origin = req.headers.origin;
@@ -63,7 +62,7 @@ module.exports = async function handler(req, res) {
     if (!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository)) {
       return respondJson(res, 400, { error: 'Selecciona un repositorio válido.' });
     }
-    if (!MODELS.has(model)) return respondJson(res, 400, { error: 'Selecciona un modelo disponible.' });
+    if (!SUPPORTED_MODELS.includes(model)) return respondJson(res, 400, { error: 'Selecciona un modelo disponible.' });
 
     const repo = await githubFetch(session, `/repos/${repository}`);
     if (repo.private) return respondJson(res, 403, { error: 'Esta conexión solo tiene permiso para repositorios públicos.' });
@@ -85,3 +84,4 @@ module.exports = async function handler(req, res) {
     return respondJson(res, error.status || 500, { error: error.message || 'No se pudo acceder a las tareas.' });
   }
 };
+

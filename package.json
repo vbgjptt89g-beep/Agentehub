@@ -3,5 +3,9 @@
   "version": "0.2.0",
   "private": true,
   "engines": { "node": ">=20" },
+  "scripts": {
+    "check": "node scripts/check-project.js"
+  },
   "dependencies": { "@neondatabase/serverless": "^1.0.2" }
 }
+

@@ -1,0 +1,9 @@
+.git/
+.github/
+backend/
+docs/
+frontend/
+scripts/
+tests/
+CLAUDE.md
+
