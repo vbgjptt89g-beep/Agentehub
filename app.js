@@ -77,7 +77,6 @@ document.querySelector('#launch-task').addEventListener('click', async () => {
     return;
   }
   const repository = document.querySelector('#repo-select').value;
-  const repo = repository.split('/').pop();
   const model = document.querySelector('#model-select').value;
   const launchButton = document.querySelector('#launch-task');
   launchButton.disabled = true;
@@ -204,11 +203,14 @@ async function refreshDashboard() {
   const pullsPromise = githubState.selectedRepo
     ? api(`/api/github/pulls?repo=${encodeURIComponent(githubState.selectedRepo)}`).catch(() => [])
     : Promise.resolve([]);
+  let tasksUnavailable = false;
   const tasksPromise = githubState.selectedRepo
-    ? api(`/api/tasks?repo=${encodeURIComponent(githubState.selectedRepo)}`).catch(() => [])
+    ? api(`/api/tasks?repo=${encodeURIComponent(githubState.selectedRepo)}`).catch(() => { tasksUnavailable = true; return []; })
     : Promise.resolve([]);
   const [issues, pulls, tasks] = await Promise.all([issuesPromise, pullsPromise, tasksPromise]);
-  document.querySelector('#dashboard-status').textContent = `GitHub conectado · datos actuales de ${githubState.selectedRepo || 'tus repositorios'}. Las ejecuciones de agentes aún son una vista previa.`;
+  document.querySelector('#dashboard-status').textContent = tasksUnavailable
+    ? `GitHub conectado · datos actuales de ${githubState.selectedRepo || 'tus repositorios'}. Configura DATABASE_URL para activar la cola persistente.`
+    : `GitHub conectado · datos actuales de ${githubState.selectedRepo || 'tus repositorios'}. Las tareas guardadas esperan a que se active el worker.`;
   document.querySelector('#dashboard-status').classList.add('connected-banner');
   const metrics = document.querySelectorAll('.metric-value');
   if (metrics[0]) metrics[0].textContent = String(tasks.filter(task => ['queued', 'running'].includes(task.status)).length);

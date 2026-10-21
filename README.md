@@ -43,6 +43,7 @@ El repo está preparado como sitio estático con funciones Node en `api/`. Impor
 - `GET /api/github/pulls?repo=owner/name`
 - `GET /api/tasks?repo=owner/name` — tareas persistentes del usuario autenticado.
 - `POST /api/tasks` — valida acceso al repositorio y registra una tarea en estado `queued`.
+- `PATCH /api/tasks?id=<uuid>` — cancela una tarea que siga pendiente.
 
 ## Próximas etapas
 
