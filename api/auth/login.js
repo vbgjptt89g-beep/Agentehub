@@ -6,13 +6,18 @@ module.exports = function handler(req, res) {
     res.setHeader('Allow', 'GET');
     return respondJson(res, 405, { error: 'Method not allowed.' });
   }
+  const redirectToDashboard = (reason) => {
+    res.setHeader('Cache-Control', 'no-store');
+    res.writeHead(302, { Location: `/?auth=${encodeURIComponent(reason)}` });
+    res.end();
+  };
   const { GITHUB_CLIENT_ID: clientId, GITHUB_OAUTH_CALLBACK_URL: callbackUrl } = process.env;
-  if (!clientId || !callbackUrl) return respondJson(res, 503, { error: 'GitHub OAuth is not configured. Add GITHUB_CLIENT_ID and GITHUB_OAUTH_CALLBACK_URL.' });
+  if (!clientId || !callbackUrl) return redirectToDashboard('configuration-error');
   try {
     // Secret validation happens here before we send a user to GitHub.
     require('../../lib/github-session').sealSession({ accessToken: 'configuration-check', expiresAt: 1 });
-  } catch (error) {
-    return respondJson(res, 503, { error: error.message });
+  } catch {
+    return redirectToDashboard('configuration-error');
   }
   const state = crypto.randomBytes(32).toString('base64url');
   setCookie(res, STATE_COOKIE_NAME, state, 600);
