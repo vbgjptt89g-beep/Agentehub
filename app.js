@@ -412,17 +412,17 @@ async function showView(view) {
       rows.forEach(item => { const row = document.createElement('div'); row.className = 'data-row'; const copy = document.createElement('div'); const name = document.createElement('b'); name.textContent = item.title; const meta = document.createElement('small'); meta.textContent = item.meta; copy.append(name, meta); row.append(copy); list.append(row); });
       panel.append(list); return;
     }
-    if (view === 'repositories') rows = githubState.repos.map(repo => ({ title: repo.fullName, meta: `${repo.private ? 'Privado' : 'Público'} · rama ${repo.defaultBranch} · ${repo.openIssuesCount || 0} issues abiertos`, href: repo.htmlUrl }));
-    if (view === 'tasks') {
+    if (!githubState.demo && view === 'repositories') rows = githubState.repos.map(repo => ({ title: repo.fullName, meta: `${repo.private ? 'Privado' : 'Público'} · rama ${repo.defaultBranch} · ${repo.openIssuesCount || 0} issues abiertos`, href: repo.htmlUrl }));
+    if (!githubState.demo && view === 'tasks') {
       const tasks = await api(`/api/tasks?repo=${encodeURIComponent(githubState.selectedRepo)}`);
       rows = tasks.map(task => ({ title: task.issueNumber ? `#${task.issueNumber} · ${task.title}` : task.title, meta: `${task.status === 'queued' ? 'En cola' : task.status} · ${task.repository} · ${task.model} · ${new Date(task.createdAt).toLocaleString()}` }));
     }
-    if (view === 'pull-requests') {
+    if (!githubState.demo && view === 'pull-requests') {
       if (!githubState.selectedRepo) throw new Error('Selecciona primero un repositorio.');
       const pulls = await api(`/api/github/pulls?repo=${encodeURIComponent(githubState.selectedRepo)}`);
       rows = pulls.map(pull => ({ title: `#${pull.number} · ${pull.title}`, meta: `${pull.draft ? 'Borrador' : 'Abierto'} · ${pull.head} → ${pull.base}`, href: pull.htmlUrl }));
     }
-    if (view === 'settings') {
+    if (!githubState.demo && view === 'settings') {
       rows = [
         { title: 'GitHub OAuth', meta: `Conectado como @${githubState.user.login} · permisos: ${githubState.scopes.join(', ') || 'repositorios públicos'}` },
         { title: 'Anthropic y OpenAI', meta: 'Los proveedores todavía no están conectados. Las API keys se añadirán como ANTHROPIC_API_KEY y OPENAI_API_KEY en Vercel.' },
@@ -431,7 +431,7 @@ async function showView(view) {
         { title: 'Costos y equipos', meta: 'PostgreSQL, límites de gasto y roles de equipo quedan para la siguiente etapa.' }
       ];
     }
-    if (view === 'repositories' && githubState.selectedRepo) {
+    if (!githubState.demo && view === 'repositories' && githubState.selectedRepo) {
       const branches = await api(`/api/github/branches?repo=${encodeURIComponent(githubState.selectedRepo)}`);
       rows.unshift(...branches.map(branch => ({ title: branch.name, meta: `${branch.protected ? 'Protegida' : 'Rama'} · ${branch.sha.slice(0, 7)}` })));
     }
