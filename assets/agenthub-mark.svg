@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title id="title">AgentHub</title>
+  <rect width="64" height="64" rx="16" fill="#f6f5f4"/>
+  <g fill="none" stroke="#37352f" stroke-linecap="round" stroke-linejoin="round" stroke-width="4">
+    <path d="M18 19h28v26H18z"/>
+    <path d="M25 28h14M25 36h9"/>
+    <path d="M46 24h5M46 40h5" stroke="#0075de"/>
+  </g>
+</svg>
+

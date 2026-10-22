@@ -1,0 +1,24 @@
+.hidden{display:none!important}
+.github-auth-link,.github-logout{height:27px;display:inline-flex;align-items:center;justify-content:center;padding:0 9px;border:1px solid #34363b;border-radius:5px;background:#1b1c1f;color:#c9cacf;font-size:10px;font-weight:500}
+.github-auth-link:hover,.github-logout:hover{border-color:#5dd6bd;color:#83e3d0;text-decoration:none}
+.github-logout{cursor:pointer}
+.not-connected-dot{width:5px;height:5px;background:#65676d;border-radius:50%}
+.demo-banner{margin:-12px 0 20px;padding:8px 10px;border:1px solid #343137;background:#1b1a1f;color:#aaa2bc;border-radius:5px;font-size:10px}
+.demo-banner.connected-banner{border-color:#27443c;background:#17221f;color:#8fceb9}
+.data-view{min-height:72vh}
+.data-heading{margin:3px 0 25px}
+.data-heading h1{font-size:24px;letter-spacing:-.6px;margin:0 0 6px}
+.data-heading p,.empty-state{color:#83858b;font-size:11px;line-height:1.6}
+.data-list{border-top:1px solid var(--line)}
+.data-row{min-height:58px;padding:11px 12px;display:flex;align-items:center;justify-content:space-between;gap:15px;border-bottom:1px solid var(--line-soft);color:var(--text)}
+a.data-row:hover{background:#191a1d;text-decoration:none}
+.data-row>div{display:flex;flex-direction:column;gap:5px;min-width:0}
+.data-row b{font-size:11px;font-weight:500;overflow:hidden;text-overflow:ellipsis}
+.data-row small{font-size:9px;color:#7c7e84}
+.secondary-button{white-space:nowrap;border:1px solid #36373c;border-radius:4px;background:#202124;color:#bfc0c5;padding:6px 8px;font-size:9px}
+.secondary-button:hover{border-color:#5dd6bd;color:#83e3d0}
+.data-view>.empty-state{padding:14px 0}
+.error-state{color:#e8a27d}
+.running-list>.empty-state{padding:14px 0;border-bottom:1px solid var(--line-soft)}
+.timeline>.empty-state{padding:9px 0}
+@media(max-width:620px){.github-auth-link,.github-logout{padding:0 6px;font-size:9px}.data-heading h1{font-size:21px}.demo-banner{font-size:9px;line-height:1.5}}
