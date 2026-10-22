@@ -15,11 +15,11 @@ const demoPulls = [
   { number: 39, title: 'fix: reintentar webhook con backoff exponencial', head: 'fix/webhook-retry', base: 'main', draft: false, htmlUrl: '#' }
 ];
 
-function announce(message) {
+function announce(message, duration = 2600) {
   toast.textContent = message;
   toast.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => toast.classList.remove('show'), 2600);
+  toastTimer = setTimeout(() => toast.classList.remove('show'), duration);
 }
 
 function openModal() {
@@ -491,5 +491,6 @@ loadGitHub();
 const authResult = new URLSearchParams(window.location.search).get('auth');
 if (authResult === 'connected') announce('GitHub conectado. Tus repositorios ya están disponibles.');
 if (authResult === 'github-error') announce('No se pudo completar la conexión con GitHub.');
+if (authResult === 'configuration-error') announce('Configura GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, GITHUB_OAUTH_CALLBACK_URL y AGENTHUB_SESSION_SECRET en Vercel para conectar GitHub.', 6500);
 if (authResult) window.history.replaceState({}, '', window.location.pathname);
 
