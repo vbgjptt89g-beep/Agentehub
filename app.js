@@ -41,7 +41,7 @@ function taskRunRow(task) {
   row.innerHTML = `<div class="agent-avatar ${avatarClass}">${avatarGlyph}</div><div class="run-info"><div class="run-title"><b></b><span class="run-state"><i></i> ${task.status === 'running' ? 'En ejecución' : 'En cola'}</span></div><div class="run-meta"><span class="repo-label"><span class="project-dot dot-cyan"></span></span><span>·</span><span></span></div><div class="run-progress"><div><i style="width:${task.status === 'running' ? '64%' : '2%'}"></i></div><span>${task.status === 'running' ? '64%' : '0%'}</span><small></small></div></div><button class="more-button" aria-label="Cancelar tarea pendiente" title="Cancelar tarea pendiente">×</button>`;
   row.querySelector('.run-title>b').textContent = task.title;
   row.querySelector('.repo-label').append(document.createTextNode(task.repository.split('/').pop()));
-  row.querySelector('.run-meta span:last-child').textContent = task.model;
+  row.querySelector('.run-meta > span:last-child').textContent = task.model;
   row.querySelector('.run-progress small').textContent = new Date(task.createdAt).toLocaleString();
   row.dataset.taskId = task.id;
   row.querySelector('.more-button').addEventListener('click', async () => {
