@@ -323,6 +323,12 @@ function startDemoMode() {
   document.querySelector('.user-avatar').textContent = 'D';
   document.querySelector('.top-avatar').textContent = 'D';
   document.querySelector('#workspace-subtitle').textContent = 'Explorando datos de ejemplo';
+  document.querySelector('.usage-title>span:last-child').textContent = '$2.36 / $10';
+  document.querySelector('.usage-block>small').textContent = '24% · cifras ilustrativas';
+  document.querySelector('.usage-track i').style.width = '24%';
+  document.querySelector('.section-heading h2').childNodes[0].textContent = 'Tareas de agentes ';
+  document.querySelector('.section-heading h2').nextElementSibling.textContent = 'Ejemplo de ejecución · no se ha iniciado ningún agente real';
+  document.querySelector('.stream-live').innerHTML = '<i></i> DEMO';
 }
 
 function renderDemoDashboard() {
