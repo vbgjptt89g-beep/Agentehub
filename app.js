@@ -36,29 +36,64 @@ function closeModal() {
 function taskRunRow(task) {
   const row = document.createElement('article');
   row.className = 'run-row';
-  const avatarClass = task.model.startsWith('Codex') ? 'codex' : 'claude';
+  const avatarClass = String(task.model || '').startsWith('Codex') ? 'codex' : 'claude';
   const avatarGlyph = avatarClass === 'codex' ? '⌘' : '✳';
-  row.innerHTML = `<div class="agent-avatar ${avatarClass}">${avatarGlyph}</div><div class="run-info"><div class="run-title"><b></b><span class="run-state"><i></i> ${task.status === 'running' ? 'En ejecución' : 'En cola'}</span></div><div class="run-meta"><span class="repo-label"><span class="project-dot dot-cyan"></span></span><span>·</span><span></span></div><div class="run-progress"><div><i style="width:${task.status === 'running' ? '64%' : '2%'}"></i></div><span>${task.status === 'running' ? '64%' : '0%'}</span><small></small></div></div><button class="more-button" aria-label="Cancelar tarea pendiente" title="Cancelar tarea pendiente">×</button>`;
-  row.querySelector('.run-title>b').textContent = task.title;
-  row.querySelector('.repo-label').append(document.createTextNode(task.repository.split('/').pop()));
-  row.querySelector('.run-meta > span:last-child').textContent = task.model;
-  row.querySelector('.run-progress small').textContent = new Date(task.createdAt).toLocaleString();
+  const avatar = document.createElement('div');
+  avatar.className = `agent-avatar ${avatarClass}`;
+  avatar.textContent = avatarGlyph;
+  const info = document.createElement('div');
+  info.className = 'run-info';
+  const titleRow = document.createElement('div');
+  titleRow.className = 'run-title';
+  const title = document.createElement('b');
+  title.textContent = task.title || 'Tarea sin título';
+  const status = document.createElement('span');
+  status.className = 'run-state';
+  const statusLabel = task.status === 'running' ? 'En ejecución' : task.status === 'queued' ? 'En cola' : task.status;
+  status.append(document.createElement('i'), document.createTextNode(` ${statusLabel}`));
+  titleRow.append(title, status);
+  const meta = document.createElement('div');
+  meta.className = 'run-meta';
+  const repository = document.createElement('span');
+  repository.className = 'repo-label';
+  const dot = document.createElement('span');
+  dot.className = 'project-dot dot-cyan';
+  repository.append(dot, document.createTextNode(String(task.repository || '').split('/').pop()));
+  const separator = document.createElement('span');
+  separator.textContent = '·';
+  const model = document.createElement('span');
+  model.textContent = task.model || 'Modelo sin especificar';
+  meta.append(repository, separator, model);
+  const created = document.createElement('small');
+  created.textContent = task.createdAt ? `Creada: ${new Date(task.createdAt).toLocaleString()}` : '';
+  const progress = document.createElement('div');
+  progress.className = 'run-progress';
+  progress.append(created);
+  info.append(titleRow, meta, progress);
+  row.append(avatar, info);
   row.dataset.taskId = task.id;
-  row.querySelector('.more-button').addEventListener('click', async () => {
-    const button = row.querySelector('.more-button');
-    button.disabled = true;
-    try {
-      if (githubState.demo) githubState.tasks = githubState.tasks.filter(item => item.id !== task.id);
-      else await api(`/api/tasks?id=${encodeURIComponent(task.id)}`, { method: 'PATCH' });
-      row.querySelector('.run-state').lastChild.textContent = ' Cancelada';
-      row.querySelector('.run-state i').style.background = '#999';
-      button.remove();
-      announce('Tarea pendiente cancelada.');
-    } catch (error) {
-      announce(error.message);
-      button.disabled = false;
-    }
-  });
+  if (task.status === 'queued') {
+    const cancel = document.createElement('button');
+    cancel.className = 'more-button';
+    cancel.setAttribute('aria-label', 'Cancelar tarea pendiente');
+    cancel.title = 'Cancelar tarea pendiente';
+    cancel.textContent = '×';
+    cancel.addEventListener('click', async () => {
+      cancel.disabled = true;
+      try {
+        if (githubState.demo) githubState.tasks = githubState.tasks.filter(item => item.id !== task.id);
+        else await api(`/api/tasks?id=${encodeURIComponent(task.id)}`, { method: 'PATCH' });
+        status.lastChild.textContent = ' Cancelada';
+        status.querySelector('i').style.background = '#999';
+        cancel.remove();
+        announce('Tarea pendiente cancelada.');
+      } catch (error) {
+        announce(error.message);
+        cancel.disabled = false;
+      }
+    });
+    row.append(cancel);
+  }
   return row;
 }
 

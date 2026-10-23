@@ -63,6 +63,8 @@ npx vercel dev
 
 Si no configuras `DATABASE_URL`, las vistas de GitHub siguen disponibles, pero las rutas de tareas responden con `503` y el dashboard indicará que falta la base de datos.
 
+El botón de conexión valida las cuatro variables de OAuth y sesión antes de redirigir a GitHub. En producción, el callback debe usar HTTPS y coincidir exactamente con la URL registrada en la GitHub OAuth App; si falta configuración, el dashboard muestra un aviso y conserva la sesión local sin iniciar el flujo.
+
 ## Despliegue en Vercel
 
 1. Importa el repositorio en Vercel con el framework **Other** y raíz `/`.

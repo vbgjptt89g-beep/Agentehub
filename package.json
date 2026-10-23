@@ -4,7 +4,8 @@
   "private": true,
   "engines": { "node": ">=20" },
   "scripts": {
-    "check": "node scripts/check-project.js"
+    "check": "node scripts/check-project.js",
+    "test": "node --test"
   },
   "dependencies": { "@neondatabase/serverless": "^1.0.2" }
 }

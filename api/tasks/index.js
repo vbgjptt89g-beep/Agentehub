@@ -81,7 +81,9 @@ module.exports = async function handler(req, res) {
     res.setHeader('Cache-Control', 'no-store');
     return respondJson(res, 201, task);
   } catch (error) {
-    return respondJson(res, error.status || 500, { error: error.message || 'No se pudo acceder a las tareas.' });
+    const status = error.status || 500;
+    const message = error.status ? error.message : 'No se pudo acceder a las tareas.';
+    return respondJson(res, status, { error: message || 'No se pudo acceder a las tareas.' });
   }
 };
 

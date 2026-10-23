@@ -11,8 +11,21 @@ module.exports = function handler(req, res) {
     res.writeHead(302, { Location: `/?auth=${encodeURIComponent(reason)}` });
     res.end();
   };
-  const { GITHUB_CLIENT_ID: clientId, GITHUB_OAUTH_CALLBACK_URL: callbackUrl } = process.env;
-  if (!clientId || !callbackUrl) return redirectToDashboard('configuration-error');
+  const {
+    GITHUB_CLIENT_ID: clientId,
+    GITHUB_CLIENT_SECRET: clientSecret,
+    GITHUB_OAUTH_CALLBACK_URL: callbackUrl
+  } = process.env;
+  if (!clientId || !clientSecret || !callbackUrl) return redirectToDashboard('configuration-error');
+  try {
+    const callback = new URL(callbackUrl);
+    const localHttp = process.env.NODE_ENV !== 'production'
+      && callback.protocol === 'http:'
+      && ['localhost', '127.0.0.1'].includes(callback.hostname);
+    if (callback.protocol !== 'https:' && !localHttp) return redirectToDashboard('configuration-error');
+  } catch {
+    return redirectToDashboard('configuration-error');
+  }
   try {
     // Secret validation happens here before we send a user to GitHub.
     require('../../lib/github-session').sealSession({ accessToken: 'configuration-check', expiresAt: 1 });

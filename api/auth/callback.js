@@ -14,12 +14,13 @@ module.exports = async function handler(req, res) {
   const code = query.get('code');
   const fail = (reason) => {
     clearCookie(res, STATE_COOKIE_NAME);
+    res.setHeader('Cache-Control', 'no-store');
     res.writeHead(302, { Location: `/?auth=${encodeURIComponent(reason)}` });
     res.end();
   };
   if (query.has('error') || !code || !state || !cookies[STATE_COOKIE_NAME] || state !== cookies[STATE_COOKIE_NAME]) return fail('github-error');
   const { GITHUB_CLIENT_ID: clientId, GITHUB_CLIENT_SECRET: clientSecret, GITHUB_OAUTH_CALLBACK_URL: callbackUrl } = process.env;
-  if (!clientId || !clientSecret || !callbackUrl) return respondJson(res, 503, { error: 'GitHub OAuth is not fully configured.' });
+  if (!clientId || !clientSecret || !callbackUrl) return fail('configuration-error');
 
   try {
     const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
