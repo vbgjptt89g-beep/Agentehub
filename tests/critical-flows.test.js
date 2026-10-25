@@ -44,13 +44,13 @@ function loadWithExports(modulePath, overrides) {
 
 test('session cookies are encrypted, readable, and reject tampering', () => {
   process.env.AGENTHUB_SESSION_SECRET = 'test-session-secret-with-at-least-32-characters';
-  const { sealSession, openSession } = require('../lib/github-session');
+  const { sealSession, getSession } = require('../lib/github-session');
   const session = { accessToken: 'test-token', expiresAt: Date.now() + 60_000, user: { id: 17, login: 'test-user' } };
   const sealed = sealSession(session);
   assert.notEqual(sealed, JSON.stringify(session));
-  assert.deepEqual(openSession(sealed), session);
+  assert.deepEqual(getSession({ headers: { cookie: `agenthub_session=${sealed}` } }), session);
   const tampered = `${sealed[0] === 'A' ? 'B' : 'A'}${sealed.slice(1)}`;
-  assert.equal(openSession(tampered), null);
+  assert.equal(getSession({ headers: { cookie: `agenthub_session=${tampered}` } }), null);
 });
 
 test('OAuth callback checks state, exchanges the code, and creates a session cookie', async () => {
