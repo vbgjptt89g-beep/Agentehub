@@ -1,18 +1,6 @@
 const { database, ensureTaskSchema } = require('../../lib/database');
-const { githubFetch, requireSession, respondJson } = require('../../lib/github-session');
+const { githubFetch, requireSameOrigin, requireSession, respondJson } = require('../../lib/github-session');
 const { SUPPORTED_MODELS } = require('../../shared/constants');
-
-function sameOrigin(req) {
-  const origin = req.headers.origin;
-  if (!origin) return false;
-  const host = req.headers['x-forwarded-host'] || req.headers.host;
-  try {
-    const parsed = new URL(origin);
-    return parsed.host === host && (parsed.protocol === 'https:' || parsed.protocol === 'http:');
-  } catch {
-    return false;
-  }
-}
 
 module.exports = async function handler(req, res) {
   const session = requireSession(req, res);
@@ -33,7 +21,7 @@ module.exports = async function handler(req, res) {
       return respondJson(res, 200, tasks);
     }
     if (req.method === 'PATCH') {
-      if (!sameOrigin(req)) return respondJson(res, 403, { error: 'Solicitud de origen no permitido.' });
+      if (!requireSameOrigin(req, res)) return;
       const id = typeof req.query.id === 'string' ? req.query.id : '';
       if (!/^[0-9a-f-]{36}$/i.test(id)) return respondJson(res, 400, { error: 'Identificador de tarea no válido.' });
       const [task] = await database()`
@@ -49,7 +37,7 @@ module.exports = async function handler(req, res) {
       res.setHeader('Allow', 'GET, POST, PATCH');
       return respondJson(res, 405, { error: 'Method not allowed.' });
     }
-    if (!sameOrigin(req)) return respondJson(res, 403, { error: 'Solicitud de origen no permitido.' });
+    if (!requireSameOrigin(req, res)) return;
 
     const body = req.body && typeof req.body === 'object' ? req.body : {};
     const title = typeof body.title === 'string' ? body.title.trim() : '';
@@ -81,7 +69,10 @@ module.exports = async function handler(req, res) {
     res.setHeader('Cache-Control', 'no-store');
     return respondJson(res, 201, task);
   } catch (error) {
-    return respondJson(res, error.status || 500, { error: error.message || 'No se pudo acceder a las tareas.' });
+    const status = Number.isInteger(error.status) && error.status >= 400 && error.status < 500 ? error.status : 500;
+    const message = status === 500 ? 'No se pudo acceder a las tareas.' : error.message;
+    if (status === 500) console.error('Task API failure:', error);
+    return respondJson(res, status, { error: message });
   }
 };
 

@@ -1,10 +1,11 @@
-const { clearCookie, COOKIE_NAME, getSession, respondJson } = require('../../lib/github-session');
+const { clearCookie, COOKIE_NAME, getSession, requireSameOrigin, respondJson } = require('../../lib/github-session');
 
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
     return respondJson(res, 405, { error: 'Method not allowed.' });
   }
+  if (!requireSameOrigin(req, res)) return;
   const session = getSession(req);
   const { GITHUB_CLIENT_ID: clientId, GITHUB_CLIENT_SECRET: clientSecret } = process.env;
   if (session && clientId && clientSecret) {

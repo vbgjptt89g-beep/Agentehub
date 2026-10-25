@@ -1,5 +1,6 @@
 const modal = document.querySelector('#task-modal');
 const promptField = document.querySelector('#task-prompt');
+const titleField = document.querySelector('#task-title');
 const toast = document.querySelector('#toast');
 let toastTimer;
 const githubState = { authenticated: false, user: null, repos: [], selectedRepo: '', demo: false, tasks: [] };
@@ -75,12 +76,14 @@ document.addEventListener('keydown', event => {
 });
 
 document.querySelector('#launch-task').addEventListener('click', async () => {
-  const title = promptField.value.trim();
-  if (!title) {
-    promptField.focus();
-    promptField.setCustomValidity('Describe la tarea antes de iniciarla.');
-    promptField.reportValidity();
-    promptField.addEventListener('input', () => promptField.setCustomValidity(''), { once: true });
+  const title = titleField.value.trim();
+  const prompt = promptField.value.trim();
+  if (!title || !prompt) {
+    const invalidField = title ? promptField : titleField;
+    invalidField.focus();
+    invalidField.setCustomValidity(title ? 'Describe las instrucciones de la tarea.' : 'Escribe un título para la tarea.');
+    invalidField.reportValidity();
+    invalidField.addEventListener('input', () => invalidField.setCustomValidity(''), { once: true });
     return;
   }
   if ((!githubState.authenticated && !githubState.demo) || !githubState.repos.length) {
@@ -94,14 +97,15 @@ document.querySelector('#launch-task').addEventListener('click', async () => {
   try {
   const issue = document.querySelector('#issue-input').value.trim();
   const task = githubState.demo
-    ? { id: `demo-${Date.now()}`, title, prompt: title, repository, model, issueNumber: Number(issue.match(/#(\d+)/)?.[1]) || null, status: 'queued', createdAt: new Date().toISOString() }
-    : await api('/api/tasks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, prompt: title, repository, model, issue }) });
+    ? { id: `demo-${Date.now()}`, title, prompt, repository, model, issueNumber: Number(issue.match(/#(\d+)/)?.[1]) || null, status: 'queued', createdAt: new Date().toISOString() }
+    : await api('/api/tasks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, prompt, repository, model, issue }) });
   if (githubState.demo) githubState.tasks.unshift(task);
   const row = taskRunRow(task);
   document.querySelector('.running-list').prepend(row);
   const count = document.querySelector('.section-heading h2 .count-pill');
   count.textContent = String(Number(count.textContent) + 1);
   closeModal();
+  titleField.value = '';
   promptField.value = '';
   document.querySelector('#issue-input').value = '';
   announce(githubState.demo ? 'Tarea de demostración añadida a la cola local.' : 'Tarea guardada. Quedó en cola; falta activar el worker de ejecución.');
@@ -462,7 +466,8 @@ async function showView(view) {
         assign.addEventListener('click', event => {
           event.preventDefault(); event.stopPropagation();
           document.querySelector('#repo-select').value = githubState.selectedRepo;
-          promptField.value = item.issue.title;
+          titleField.value = item.issue.title;
+          promptField.value = '';
           document.querySelector('#issue-input').value = `#${item.issue.number} ${item.issue.title}`;
           openModal();
         });

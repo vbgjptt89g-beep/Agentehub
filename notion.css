@@ -180,7 +180,7 @@ a:hover { color: #005bb5; }
 .modal-kicker { color: #77746f; font: 500 10px Inter,sans-serif; letter-spacing: .06em; }
 .modal-head h2 { color: #1c1b19; font-size: 21px; letter-spacing: -.6px; }
 .prompt-label, .modal-fields label, .issue-label { color: #5d5a56; font-size: 12px; }
-.task-modal textarea, .modal-fields select, .issue-label input { color: #232220; background: #fff; border: 1px solid rgba(0,0,0,.15); border-radius: 7px; font-size: 13px; }
+.task-modal textarea, .task-modal #task-title, .modal-fields select, .issue-label input { color: #232220; background: #fff; border: 1px solid rgba(0,0,0,.15); border-radius: 7px; font-size: 13px; }
 .task-modal textarea { min-height: 120px; line-height: 1.55; }
 .task-modal textarea::placeholder, .task-modal input::placeholder { color: #a09c96; }
 .task-modal select:focus, .task-modal textarea:focus, .task-modal input:focus { border-color: #0075de; }
