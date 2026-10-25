@@ -110,6 +110,7 @@ a:hover { color: #005bb5; }
 .text-button:hover, .rail-link:hover { color: #0075de; }
 .text-button span, .rail-link span { color: #0075de; }
 .running-list { margin-bottom: 26px; border-top: 1px solid var(--line-soft); }
+.task-created-at { display: block; margin-top: 7px; color: #77746f; font-size: 9px; }
 .run-row { min-height: 82px; padding: 15px 4px; border-color: var(--line-soft); gap: 12px; }
 .agent-avatar { width: 32px; height: 32px; border-radius: 8px; font-size: 15px; }
 .agent-avatar.claude, .mini-agent.claude { color: #9f5b2e; background: #fff0e2; }

@@ -23,7 +23,8 @@ AgentHub reúne repositorios, issues, pull requests y tareas de agentes de códi
 | Cancelación de tareas pendientes | Disponible |
 | Ejecución de agentes y cola de workers | Pendiente |
 | Anthropic, OpenAI y modelos locales | Pendiente |
-| Sandbox de código, tests y streaming de logs | Pendiente |
+| Pruebas automatizadas de OAuth, sesiones y tareas | Disponible con `npm test` |
+| Sandbox de código, ejecución aislada y streaming de logs | Pendiente |
 | Creación de ramas, commits y pull requests por agentes | Pendiente |
 | Equipos, costos y gestión de claves | Pendiente |
 
@@ -121,7 +122,7 @@ lib/
   github-session.js Sesiones cifradas y cliente de GitHub
 scripts/check-project.js  Validación estática local y de CI
 shared/                   Constantes compartidas
-tests/                    Guía para la futura suite automatizada
+  tests/                    Pruebas automatizadas de flujos críticos
 index.html          Aplicación web
 styles.css          Estilos base
 ui-states.css       Estados de interfaz

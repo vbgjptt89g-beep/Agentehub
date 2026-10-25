@@ -6,15 +6,8 @@ let toastTimer;
 const githubState = { authenticated: false, user: null, repos: [], selectedRepo: '', demo: false, tasks: [] };
 githubState.scopes = [];
 
-const demoIssues = [
-  { number: 128, title: 'Añadir modo oscuro al panel de proyectos', updatedAt: new Date(Date.now() - 1000 * 60 * 34).toISOString(), labels: ['enhancement'] },
-  { number: 124, title: 'Corregir reintentos de webhooks de GitHub', updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(), labels: ['bug'] },
-  { number: 119, title: 'Documentar configuración de proveedores de IA', updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 8).toISOString(), labels: ['docs'] }
-];
-const demoPulls = [
-  { number: 42, title: 'feat: vista previa de cambios del agente', head: 'agent/preview-diff', base: 'main', draft: true, htmlUrl: '#' },
-  { number: 39, title: 'fix: reintentar webhook con backoff exponencial', head: 'fix/webhook-retry', base: 'main', draft: false, htmlUrl: '#' }
-];
+const demoIssues = [];
+const demoPulls = [];
 
 function announce(message, duration = 2600) {
   toast.textContent = message;
@@ -34,16 +27,24 @@ function closeModal() {
   modal.setAttribute('aria-hidden', 'true');
 }
 
+function taskStatusText(status) {
+  if (status === 'cancelled') return 'Cancelada';
+  if (status === 'completed') return 'Completada';
+  if (status === 'failed') return 'Fallida';
+  return 'Pendiente';
+}
+
 function taskRunRow(task) {
   const row = document.createElement('article');
   row.className = 'run-row';
   const avatarClass = task.model.startsWith('Codex') ? 'codex' : 'claude';
   const avatarGlyph = avatarClass === 'codex' ? '⌘' : '✳';
-  row.innerHTML = `<div class="agent-avatar ${avatarClass}">${avatarGlyph}</div><div class="run-info"><div class="run-title"><b></b><span class="run-state"><i></i> ${task.status === 'running' ? 'En ejecución' : 'En cola'}</span></div><div class="run-meta"><span class="repo-label"><span class="project-dot dot-cyan"></span></span><span>·</span><span></span></div><div class="run-progress"><div><i style="width:${task.status === 'running' ? '64%' : '2%'}"></i></div><span>${task.status === 'running' ? '64%' : '0%'}</span><small></small></div></div><button class="more-button" aria-label="Cancelar tarea pendiente" title="Cancelar tarea pendiente">×</button>`;
+  row.innerHTML = `<div class="agent-avatar ${avatarClass}">${avatarGlyph}</div><div class="run-info"><div class="run-title"><b></b><span class="run-state"><i></i> ${taskStatusText(task.status)}</span></div><div class="run-meta"><span class="repo-label"><span class="project-dot dot-cyan"></span></span><span>·</span><span></span></div><small class="task-created-at"></small></div><button class="more-button" aria-label="Cancelar tarea pendiente" title="Cancelar tarea pendiente">×</button>`;
   row.querySelector('.run-title>b').textContent = task.title;
   row.querySelector('.repo-label').append(document.createTextNode(task.repository.split('/').pop()));
   row.querySelector('.run-meta > span:last-child').textContent = task.model;
-  row.querySelector('.run-progress small').textContent = new Date(task.createdAt).toLocaleString();
+  row.querySelector('.task-created-at').textContent = new Date(task.createdAt).toLocaleString();
+  if (task.status !== 'queued') row.querySelector('.more-button').remove();
   row.dataset.taskId = task.id;
   row.querySelector('.more-button').addEventListener('click', async () => {
     const button = row.querySelector('.more-button');
@@ -226,12 +227,13 @@ async function refreshDashboard() {
     ? api(`/api/tasks?repo=${encodeURIComponent(githubState.selectedRepo)}`).catch(() => { tasksUnavailable = true; return []; })
     : Promise.resolve([]);
   const [issues, pulls, tasks] = await Promise.all([issuesPromise, pullsPromise, tasksPromise]);
+  const pendingTasks = tasks.filter(task => task.status === 'queued');
   document.querySelector('#dashboard-status').textContent = tasksUnavailable
     ? `GitHub conectado · datos actuales de ${githubState.selectedRepo || 'tus repositorios'}. Configura DATABASE_URL para activar la cola persistente.`
     : `GitHub conectado · datos actuales de ${githubState.selectedRepo || 'tus repositorios'}. Las tareas guardadas esperan a que se active el worker.`;
   document.querySelector('#dashboard-status').classList.add('connected-banner');
   const metrics = document.querySelectorAll('.metric-value');
-  if (metrics[0]) metrics[0].textContent = String(tasks.filter(task => ['queued', 'running'].includes(task.status)).length);
+  if (metrics[0]) metrics[0].textContent = String(pendingTasks.length);
   if (metrics[1]) metrics[1].textContent = String(pulls.length);
   if (metrics[2]) metrics[2].textContent = '—';
   if (metrics[3]) metrics[3].textContent = '$0.00';
@@ -245,18 +247,18 @@ async function refreshDashboard() {
     if (metricFoots[index]) metricFoots[index].textContent = label;
   });
   const count = document.querySelector('.section-heading h2 .count-pill');
-  if (count) count.textContent = String(tasks.length);
+  if (count) count.textContent = String(pendingTasks.length);
   const taskNavCount = document.querySelector('.nav-item[data-view="tasks"] .nav-count');
   if (taskNavCount) taskNavCount.textContent = String(tasks.length);
   const pullNavCount = document.querySelector('.nav-item[data-view="pull-requests"] .nav-count');
   if (pullNavCount) pullNavCount.textContent = String(pulls.length);
   const runList = document.querySelector('#running-list');
   runList.replaceChildren();
-  if (tasks.length) tasks.slice(0, 8).forEach(task => runList.append(taskRunRow(task)));
+  if (pendingTasks.length) pendingTasks.slice(0, 8).forEach(task => runList.append(taskRunRow(task)));
   else {
     const noRuns = document.createElement('p');
     noRuns.className = 'empty-state';
-    noRuns.textContent = 'Aún no hay tareas guardadas para este repositorio.';
+    noRuns.textContent = 'No hay tareas pendientes para este repositorio.';
     runList.append(noRuns);
   }
   const tableBody = document.querySelector('.activity-table tbody');
@@ -315,7 +317,7 @@ function startDemoMode() {
   ];
   githubState.selectedRepo = githubState.repos[0].fullName;
   githubState.tasks = [
-    { id: 'demo-task-1', title: 'Añadir búsqueda global al dashboard', repository: 'acme/launchpad', model: 'Claude Sonnet 4', status: 'running', createdAt: new Date(Date.now() - 1000 * 60 * 12).toISOString() },
+    { id: 'demo-task-1', title: 'Añadir búsqueda global al dashboard', repository: 'acme/launchpad', model: 'Claude Sonnet 4', status: 'queued', createdAt: new Date(Date.now() - 1000 * 60 * 12).toISOString() },
     { id: 'demo-task-2', title: 'Corregir reintentos de webhooks', repository: 'acme/launchpad', model: 'Codex · GPT-5', status: 'queued', createdAt: new Date(Date.now() - 1000 * 60 * 4).toISOString() }
   ];
   renderRepositories();
@@ -327,19 +329,19 @@ function startDemoMode() {
   document.querySelector('.user-avatar').textContent = 'D';
   document.querySelector('.top-avatar').textContent = 'D';
   document.querySelector('#workspace-subtitle').textContent = 'Explorando datos de ejemplo';
-  document.querySelector('.usage-title>span:last-child').textContent = '$2.36 / $10';
-  document.querySelector('.usage-block>small').textContent = '24% · cifras ilustrativas';
-  document.querySelector('.usage-track i').style.width = '24%';
-  document.querySelector('.section-heading h2').childNodes[0].textContent = 'Tareas de agentes ';
-  document.querySelector('.section-heading h2').nextElementSibling.textContent = 'Ejemplo de ejecución · no se ha iniciado ningún agente real';
+  document.querySelector('.usage-title>span:last-child').textContent = 'Sin datos';
+  document.querySelector('.usage-block>small').textContent = 'Aún no hay ejecuciones reales';
+  document.querySelector('.usage-track i').style.width = '0%';
+  document.querySelector('.section-heading h2').childNodes[0].textContent = 'Tareas pendientes ';
+  document.querySelector('.section-heading h2').nextElementSibling.textContent = 'Ejemplos locales · las tareas esperan a que se active un worker';
   document.querySelector('.stream-live').innerHTML = '<i></i> DEMO';
 }
 
 function renderDemoDashboard() {
   const values = document.querySelectorAll('.metric-value');
-  ['2', String(demoPulls.length), '8', '$2.36'].forEach((value, index) => { values[index].textContent = value; });
+  [String(githubState.tasks.length), String(demoPulls.length), '—', '$0.00'].forEach((value, index) => { values[index].textContent = value; });
   const labels = document.querySelectorAll('.metric-foot');
-  ['1 agente en ejecución · 1 en cola', 'En acme/launchpad', '6 aprobados · 2 pendientes', 'Estimación de esta demo'].forEach((value, index) => { labels[index].textContent = value; });
+  ['Esperan a que se active el worker', 'Sin datos de GitHub', 'Worker aún pendiente', 'Sin ejecuciones reales'].forEach((value, index) => { labels[index].textContent = value; });
   document.querySelector('.section-heading h2 .count-pill').textContent = String(githubState.tasks.length);
   document.querySelector('.nav-item[data-view="tasks"] .nav-count').textContent = String(githubState.tasks.length);
   document.querySelector('.nav-item[data-view="pull-requests"] .nav-count').textContent = String(demoPulls.length);
@@ -354,21 +356,15 @@ function renderDemoDashboard() {
     row.lastElementChild.textContent = new Date(issue.updatedAt).toLocaleDateString();
     return row;
   }));
+  const emptyActivity = document.createElement('tr');
+  emptyActivity.innerHTML = '<td colspan="4" class="table-empty">El modo demo no contiene actividad real de GitHub.</td>';
+  body.append(emptyActivity);
   const timeline = document.querySelector('.timeline');
   timeline.replaceChildren();
-  [
-    ['Claude Sonnet 4', 'Abrió una propuesta de cambios para la búsqueda global.', 'hace 2 min'],
-    ['Checks', '6 de 8 pruebas pasaron en feat/global-search.', 'hace 8 min'],
-    ['Codex · GPT-5', 'Tomó la tarea de reintentos de webhooks.', 'hace 12 min']
-  ].forEach(([name, detail, time]) => {
-    const item = document.createElement('div'); item.className = 'timeline-item';
-    const marker = document.createElement('i'); marker.className = 'timeline-marker';
-    const copy = document.createElement('div');
-    const title = document.createElement('b'); title.textContent = name;
-    const text = document.createElement('p'); text.textContent = detail;
-    const date = document.createElement('small'); date.textContent = time;
-    copy.append(title, text, date); item.append(marker, copy); timeline.append(item);
-  });
+  const pending = document.createElement('p');
+  pending.className = 'empty-state';
+  pending.textContent = 'Las tareas de ejemplo siguen pendientes; no hay workers ni ejecuciones activas.';
+  timeline.append(pending);
 }
 
 const viewTitles = { overview: 'Visión general', tasks: 'Tareas', 'pull-requests': 'Pull requests', repositories: 'Repositorios', settings: 'Configuración' };
@@ -402,7 +398,7 @@ async function showView(view) {
     let rows = [];
     if (githubState.demo) {
       if (view === 'repositories') rows = githubState.repos.map(repo => ({ title: repo.fullName, meta: `Público · rama ${repo.defaultBranch} · ${repo.openIssuesCount} issues abiertos`, href: repo.htmlUrl }));
-      if (view === 'tasks') rows = githubState.tasks.map(task => ({ title: task.title, meta: `${task.status === 'queued' ? 'En cola' : 'En ejecución'} · ${task.repository} · ${task.model} · ${new Date(task.createdAt).toLocaleString()}` }));
+      if (view === 'tasks') rows = githubState.tasks.map(task => ({ title: task.title, meta: `${taskStatusText(task.status)} · ${task.repository} · ${task.model} · ${new Date(task.createdAt).toLocaleString()}` }));
       if (view === 'pull-requests') rows = demoPulls.map(pull => ({ title: `#${pull.number} · ${pull.title}`, meta: `${pull.draft ? 'Borrador' : 'Abierto'} · ${pull.head} → ${pull.base}`, href: pull.htmlUrl }));
       if (view === 'settings') rows = [
         { title: 'Modo de demostración', meta: 'Datos ficticios locales para explorar la interfaz. No se escribe en GitHub ni se ejecutan agentes reales.' },
@@ -419,7 +415,7 @@ async function showView(view) {
     if (!githubState.demo && view === 'repositories') rows = githubState.repos.map(repo => ({ title: repo.fullName, meta: `${repo.private ? 'Privado' : 'Público'} · rama ${repo.defaultBranch} · ${repo.openIssuesCount || 0} issues abiertos`, href: repo.htmlUrl }));
     if (!githubState.demo && view === 'tasks') {
       const tasks = await api(`/api/tasks?repo=${encodeURIComponent(githubState.selectedRepo)}`);
-      rows = tasks.map(task => ({ title: task.issueNumber ? `#${task.issueNumber} · ${task.title}` : task.title, meta: `${task.status === 'queued' ? 'En cola' : task.status} · ${task.repository} · ${task.model} · ${new Date(task.createdAt).toLocaleString()}` }));
+      rows = tasks.map(task => ({ title: task.issueNumber ? `#${task.issueNumber} · ${task.title}` : task.title, meta: `${taskStatusText(task.status)} · ${task.repository} · ${task.model} · ${new Date(task.createdAt).toLocaleString()}` }));
     }
     if (!githubState.demo && view === 'pull-requests') {
       if (!githubState.selectedRepo) throw new Error('Selecciona primero un repositorio.');

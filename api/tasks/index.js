@@ -2,6 +2,35 @@ const { database, ensureTaskSchema } = require('../../lib/database');
 const { githubFetch, requireSameOrigin, requireSession, respondJson } = require('../../lib/github-session');
 const { SUPPORTED_MODELS } = require('../../shared/constants');
 
+function safeLogDetails(error) {
+  let message = String(error && error.message || 'Unknown error')
+    .replace(/(?:postgres(?:ql)?|mysql):\/\/[^\s"'`]+/gi, '[redacted database URL]')
+    .replace(/\b(?:gh[pousr]_[A-Za-z0-9_]+|github_pat_[A-Za-z0-9_]+)\b/g, '[redacted token]')
+    .replace(/\bBearer\s+\S+/gi, 'Bearer [redacted token]');
+  for (const [key, value] of Object.entries(process.env)) {
+    if (value && /SECRET|TOKEN|DATABASE_URL|API_KEY/i.test(key)) message = message.split(value).join('[redacted]');
+  }
+  return { name: error && error.name || 'Error', code: error && error.code, status: error && error.status, message };
+}
+
+function safeUpstreamError(error) {
+  if (error.code === 'DATABASE_NOT_CONFIGURED') {
+    return { status: 503, message: 'La base de datos no está configurada. Añade DATABASE_URL en el entorno.' };
+  }
+  if (error.name === 'GitHubApiError') {
+    const responses = {
+      401: [401, 'La sesión de GitHub venció. Conecta tu cuenta otra vez.'],
+      403: [403, 'GitHub no permitió esta operación. Revisa los permisos de la cuenta.'],
+      404: [404, 'No se encontró el repositorio o el issue solicitado.'],
+      422: [400, 'GitHub no aceptó los datos de la tarea.'],
+      429: [503, 'GitHub limitó temporalmente las solicitudes. Inténtalo más tarde.']
+    };
+    const [status, message] = responses[error.status] || [502, 'No se pudo completar la solicitud a GitHub.'];
+    return { status, message };
+  }
+  return null;
+}
+
 module.exports = async function handler(req, res) {
   const session = requireSession(req, res);
   if (!session) return;
@@ -41,7 +70,7 @@ module.exports = async function handler(req, res) {
 
     const body = req.body && typeof req.body === 'object' ? req.body : {};
     const title = typeof body.title === 'string' ? body.title.trim() : '';
-    const prompt = typeof body.prompt === 'string' ? body.prompt.trim() : title;
+    const prompt = typeof body.prompt === 'string' ? body.prompt.trim() : '';
     const repository = typeof body.repository === 'string' ? body.repository.trim() : '';
     const model = typeof body.model === 'string' ? body.model : '';
     if (!title || title.length > 180 || !prompt || prompt.length > 8000) {
@@ -69,10 +98,10 @@ module.exports = async function handler(req, res) {
     res.setHeader('Cache-Control', 'no-store');
     return respondJson(res, 201, task);
   } catch (error) {
-    const status = Number.isInteger(error.status) && error.status >= 400 && error.status < 500 ? error.status : 500;
-    const message = status === 500 ? 'No se pudo acceder a las tareas.' : error.message;
-    if (status === 500) console.error('Task API failure:', error);
-    return respondJson(res, status, { error: message });
+    const knownError = safeUpstreamError(error);
+    if (knownError) return respondJson(res, knownError.status, { error: knownError.message });
+    console.error('Task API failure:', safeLogDetails(error));
+    return respondJson(res, 500, { error: 'No se pudo acceder a las tareas.' });
   }
 };
 
